@@ -1,0 +1,11 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<form action="/crack" method="get">
+    Number of workers (3 at max):
+    <input autocomplete="off" autofocus name="workers" placeholder="0" type="number" min="1" max="3"]><br>
+    MD5 hash:
+    <input autocomplete="off" autofocus name="md5" type="text"]><br>
+    <input type="submit">
+</form>
+{% endblock %}
