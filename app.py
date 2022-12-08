@@ -49,7 +49,7 @@ def distribute_task(num_workers, hash):
         # print(f'{start}: {start_s}, {min(total_work - 1, start + step - 1)}: {end_s}')
 
         response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
-        job_acked = False
+        job_acked = response[0]
         while not job_acked:
             response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
             if response[0] == ACK_JOB:
