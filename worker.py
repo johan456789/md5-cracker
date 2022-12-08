@@ -23,7 +23,7 @@ def brute_force(start_s, end_s, hash):
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
         # 'ABCDE': '2ecdde3959051d913f61b14579ea136d'
         if md5(s.encode()).hexdigest() == hash:
-            print(f'found: {s}')
+            tqdm.write(f'found: {s}')
             job_done, password = True, s
             return
             # return True, s
