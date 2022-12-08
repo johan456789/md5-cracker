@@ -1,14 +1,14 @@
 from flask import Flask, render_template, request
 import string
 import socket
-from time import sleep
-from hashlib import md5
+from time import sleep, time
 from tqdm import tqdm
 
 app = Flask(__name__)
-worker_addr = [('127.0.0.1', 12345), ('127.0.0.1', 12345), ('127.0.0.1', 12345)]
+worker_addr = [('127.0.0.1', 12345), ('127.0.0.1', 12346), ('127.0.0.1', 12347)]
+connections = [None] * len(worker_addr)  # TCP connections
 
-PASSWORD_LEN = 3
+PASSWORD_LEN = 5
 SIZE_OF_ALPHABET = len(string.ascii_letters)
 CHECK_IN_PERIOD_SEC = 3
 JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN = range(1, 8)
@@ -22,15 +22,35 @@ def crack():
     hash = request.args.get('md5')
     num_workers = int(request.args.get('workers'))
 
+    start_time = time()
+    create_connections(num_workers)
     distribute_task(num_workers, hash)
     password_found = False
     while not password_found:
         password_found, password = check_in(num_workers)
-        sleep(CHECK_IN_PERIOD_SEC)
+        if not password_found:
+            print(f'sleep for {CHECK_IN_PERIOD_SEC} secs')
+            sleep(CHECK_IN_PERIOD_SEC)
+    end_time = time()
+    print(f'Found: {password}. It took {round(end_time - start_time, 2)} seconds.')
+    # TODO AJAX show password
 
-    # TODO update UI to show password
+    # stop current task among workers
+    for worker_id in range(num_workers):
+        send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
 
-    return render_template('crack.html', md5=hash)
+    close_connections(num_workers)
+    return render_template('crack.html', md5=hash, password=password)
+
+def create_connections(num_workers):
+    for worker_id in range(num_workers):
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    # AF_INET: IPv4, SOCK_STREAM: TCP
+        soc.connect(worker_addr[worker_id])
+        connections[worker_id] = soc
+
+def close_connections(num_workers):
+    for worker_id in range(num_workers):
+        connections[worker_id].close()
 
 def distribute_task(num_workers, hash):
     # TODO async send task
@@ -40,13 +60,10 @@ def distribute_task(num_workers, hash):
     step = total_work // num_workers
 
     worker_id = 0
-
-
     start = 0
     while start < total_work:
         start_s = nums2str(n_to_nums(start))
         end_s = nums2str(n_to_nums(min(total_work - 1, start + step - 1)))
-        # print(f'{start}: {start_s}, {min(total_work - 1, start + step - 1)}: {end_s}')
 
         response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
         job_acked = response[0]
@@ -63,27 +80,29 @@ def check_in(num_workers):
     # (TODO) handle DONE_NOT_FOUND
     for worker_id in range(num_workers):
         response = send_to_client(worker_id, f'{PING}')
-        print(response)
         if response[0] == DONE_FOUND:
             password, hash = response[1], response[2]
             return True, password
     return False, None
 
-def send_to_client(worker_id, cmd):
+def send_to_client(worker_id, cmd, listen=True):
     '''
     return a list consisting of command and arguments
     '''
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
-        # send command
-        soc.connect(worker_addr[worker_id])
-        soc.send(cmd.encode())
-        print(f'Sent to {worker_id}: {cmd}')
+    # with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:
+    soc = connections[worker_id]
+    # send command
+    soc.send(cmd.encode())
+    print(f'Sent to {worker_id}: {cmd}')
 
+    if listen:
         # listen for response
         data = soc.recv(1024)  # receive byte streams with 1024-byte buffer
         response = data.decode()
         print(f'Recv fr {worker_id}: {response}')
-        return response.split(' ')
+        response = response.split(' ')
+        response[0] = int(response[0])
+        return response
 
 def n_to_nums(n, b=SIZE_OF_ALPHABET):
     """Convert a positive number n to its digit representation in base b."""
@@ -139,10 +158,4 @@ if __name__ == '__main__':
     print(str2nums(string.ascii_letters))
 
     print(n_to_nums(100))
-
-    # for s in str_generator('aa', 'ZZ'):
-    #     print(s)
-    # for s in tqdm(str_generator('zzzzz', 'ZZZZZ'), total = SIZE_OF_ALPHABET ** 5):
-    #     if md5(s.encode()).hexdigest() == '2ecdde3959051d913f61b14579ea136d':  # hash of 'ABCDE'
-    #         print(f'found: {s}')
-    #         break
+ 
