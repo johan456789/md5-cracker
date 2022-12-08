@@ -5,7 +5,13 @@ from time import sleep, time
 from tqdm import tqdm
 
 app = Flask(__name__)
-worker_addr = [('127.0.0.1', 12345), ('127.0.0.1', 12346), ('127.0.0.1', 12347)]
+PORT1, PORT2, PORT3 = range(12340, 12343)
+if socket.gethostname()[:10] == 'Johans-Air':
+    LOCALHOST = '127.0.0.1'
+    worker_addr = [(LOCALHOST, PORT1), (LOCALHOST, PORT2), (LOCALHOST, PORT3)]
+else:
+    worker_addr = [('172.17.3.33', PORT1), ('172.17.3.34', PORT2), ('172.17.3.35', PORT3)]
+print(f'worker_addr: {worker_addr}')
 connections = [None] * len(worker_addr)  # TCP connections
 
 PASSWORD_LEN = 5
