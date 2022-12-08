@@ -38,7 +38,8 @@ def crack():
             print(f'sleep for {CHECK_IN_PERIOD_SEC} secs')
             sleep(CHECK_IN_PERIOD_SEC)
     end_time = time()
-    print(f'Found: {password}. It took {round(end_time - start_time, 2)} seconds.')
+    duration = round(end_time - start_time, 2)
+    print(f'Found: {password}. It took {duration} seconds.')
     # TODO AJAX show password
 
     # stop current task among workers
@@ -46,7 +47,7 @@ def crack():
         send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
 
     close_connections(num_workers)
-    return render_template('crack.html', md5=hash, password=password)
+    return render_template('crack.html', md5=hash, password=password, duration=duration)
 
 def create_connections(num_workers):
     for worker_id in range(num_workers):
