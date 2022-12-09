@@ -7,7 +7,7 @@
 1. SSH into it
 2. Clone the repo and run setup scripts
   ```shell
-  git clone https://github.com/johan456789/md5-cracker src && ./setup.sh
+  git clone https://github.com/johan456789/md5-cracker src && ./src/setup.sh
   ```
 3. Run Flask
   ```shell
@@ -19,7 +19,7 @@
 1. SSH into it
 2. Clone the repo and run setup scripts
   ```shell
-  git clone https://github.com/johan456789/md5-cracker src && ./setup.sh
+  git clone https://github.com/johan456789/md5-cracker src && ./src/setup.sh
   ```
 3. Run `worker.py`
   
