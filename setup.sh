@@ -3,5 +3,4 @@ bash ~/miniconda.sh -b -p $HOME/miniconda
 echo 'export PATH="$HOME/miniconda/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 conda create -n web python pip flask tqdm -y
-conda init
 echo 'conda activate web && cd ~/src' >> ~/.bashrc
