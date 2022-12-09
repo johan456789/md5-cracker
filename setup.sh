@@ -14,5 +14,5 @@ conda create -n web python pip flask tqdm -y
 # bash ~/miniconda.sh -b -p $HOME/miniconda
 # cd src
 # conda create -n web python pip flask tqdm -y
-# echo 'conda activate web && cd ~/src' >> ~/.bashrc
+echo 'conda activate web && cd ~/src' >> ~/.bashrc
 # conda activate web
