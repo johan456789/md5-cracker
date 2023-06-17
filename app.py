@@ -29,7 +29,7 @@ def crack():
             sleep(CHECK_IN_PERIOD_SEC)
     end_time = time()
     duration = round(end_time - start_time, 2)
-    print(f'Found: {password}. It took {duration} seconds.')
+    print(f'===\nFound: {password}. It took {duration} seconds.\n===')
     # TODO AJAX show password
 
     # stop current task among workers
