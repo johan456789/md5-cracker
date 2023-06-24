@@ -5,7 +5,7 @@ def n_to_nums(n, b=SIZE_OF_ALPHABET):
     digits = []
     while n > 0:
         digits.append(n % b)
-        n  = n // b
+        n = n // b
     # pad to PASSWORD_LEN
     while len(digits) < PASSWORD_LEN:
         digits.append(0)

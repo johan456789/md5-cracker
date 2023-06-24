@@ -114,6 +114,8 @@ def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
     Example:
         >>> send_to_client(1, PING, True)
         [NOT_DONE]
+        >>> send_to_client(1, PING, False)
+        [DONE_FOUND, 'password', 'hash']
     """
     soc = connections[worker_id]
     if soc is None:

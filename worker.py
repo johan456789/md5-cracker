@@ -6,12 +6,15 @@ from hashlib import md5
 from tqdm import tqdm
 from time import sleep
 
-from utils.constants import SIZE_OF_ALPHABET, ACK_JOB, DONE_FOUND, DONE_NOT_FOUND, JOB, NOT_DONE, PING, SHUTDOWN
+from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN 
 from utils.str_num import str_generator
 
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--port", required=True, help="port number of the server")
 args = vars(ap.parse_args())
+
+shutdown = False
+job_done, password = False, None
 
 def brute_force(start_s, end_s, hash):
     # TODO use multiprocessing
@@ -25,22 +28,17 @@ def brute_force(start_s, end_s, hash):
             tqdm.write(f'found: {s}')
             job_done, password = True, s
             return
-            # return True, s
         if shutdown:
             return
-    # return False, None
     job_done, password = False, None
 
-shutdown = False
 daemon = None
-job_done, password = False, None
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
     HOST = ''
     PORT = int(args['port'])  # port of server
 
     soc.bind((HOST, PORT))
     soc.listen()
-    conn = None
     conn, address = soc.accept()
     print('Connected')
     while True:
