@@ -1,12 +1,10 @@
 import socket
 import argparse
-import multiprocessing
 import threading
 from hashlib import md5
 from tqdm import tqdm
-from time import sleep
 
-from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN 
+from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN  # noqa
 from utils.str_num import str_generator
 
 ap = argparse.ArgumentParser()
@@ -16,10 +14,11 @@ args = vars(ap.parse_args())
 shutdown = False
 job_done, password = False, None
 
+
 def brute_force(start_s, end_s, hash):
     # TODO use multiprocessing
     global job_done, password, shutdown
-    for s in tqdm(str_generator(start_s, end_s), total = SIZE_OF_ALPHABET ** 5):
+    for s in tqdm(str_generator(start_s, end_s), total=SIZE_OF_ALPHABET ** 5):
         # hashes
         # 'ABC': '902fbdd2b1df0c4f70b4a5d23525e932'  # ~3s
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
@@ -31,6 +30,7 @@ def brute_force(start_s, end_s, hash):
         if shutdown:
             return
     job_done, password = False, None
+
 
 daemon = None
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP

@@ -1,17 +1,21 @@
 import socket
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
-from utils.constants import ACK_JOB, DONE_FOUND, JOB, PASSWORD_LEN, PING, SIZE_OF_ALPHABET
+from utils.constants import ACK_JOB, DONE_FOUND, JOB, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
 from utils.str_num import n_to_nums, nums2str
 
 PORT1, PORT2, PORT3 = range(12340, 12343)
 if socket.gethostname() == 'Johans-MacBook-Air.local':
     LOCALHOST = '127.0.0.1'
-    worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1), (LOCALHOST, PORT2), (LOCALHOST, PORT3)]
+    worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
+                                          (LOCALHOST, PORT2),
+                                          (LOCALHOST, PORT3)]
 else:
-    worker_addr: List[Tuple[str, int]] = [('172.17.3.33', PORT1), ('172.17.3.34', PORT2), ('172.17.3.35', PORT3)]
+    worker_addr: List[Tuple[str, int]] = [('172.17.3.33', PORT1),
+                                          ('172.17.3.34', PORT2),
+                                          ('172.17.3.35', PORT3)]
 print(f'worker_addr: {worker_addr}')
-connections: List[Optional[socket.socket]] = [None] * len(worker_addr)  # TCP connections
+connections = [None] * len(worker_addr)  # TCP connections
 
 
 def create_connections(num_workers):
@@ -26,23 +30,27 @@ def create_connections(num_workers):
     """
     connections = [None] * num_workers
     for worker_id in range(num_workers):
-        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)    # AF_INET: IPv4, SOCK_STREAM: TCP
+        # AF_INET: IPv4, SOCK_STREAM: TCP
+        soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect(worker_addr[worker_id])
-        connections[worker_id] = soc # type: ignore
+        connections[worker_id] = soc  # type: ignore
     return connections
+
 
 def close_connections(connections):
     """
     Close all connections in the given list of connections.
 
     Args:
-        connections (List[socket.socket]): A list of socket objects representing the connections to be closed.
+        connections (List[socket.socket]):
+            A list of socket objects representing the connections to be closed.
 
     Returns:
         None
     """
     for conn in connections:
         conn.close()
+
 
 def distribute_task(num_workers, hash):
     """
@@ -71,16 +79,18 @@ def distribute_task(num_workers, hash):
         response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
         job_acked = response[0]
         while not job_acked:
-            response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
+            response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
             if response[0] == ACK_JOB:
                 job_acked = True
 
         start += step
         worker_id = (worker_id + 1) % num_workers
 
+
 def check_in(num_workers):
     """
-    Check in with all workers and return the password if it's cracked else None.
+    Check in with all workers and return the password
+    if it's cracked else None.
 
     Args:
         num_workers (int): The number of workers to check in with.
@@ -92,9 +102,10 @@ def check_in(num_workers):
     for worker_id in range(num_workers):
         response = send_to_client(worker_id, f'{PING}')
         if response[0] == DONE_FOUND:
-            password, hash = response[1], response[2]
+            password, _ = response[1], response[2]
             return password
     return None
+
 
 def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
     """
@@ -102,7 +113,7 @@ def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
 
     Args:
         worker_id (int): The ID of the worker to send the command to.
-        cmd (str): The command to send to the worker. The constant is 
+        cmd (str): The command to send to the worker. The constant is
                     defined in utils/constants.py.
         listen (bool): Whether to wait for a response from the worker.
 
@@ -130,5 +141,5 @@ def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
         response = data.decode()
         print(f'Recv fr {worker_id}: {response}')
         response = response.split(' ')
-        response[0] = int(response[0]) # type: ignore
+        response[0] = int(response[0])  # type: ignore
     return response

@@ -1,22 +1,22 @@
 from flask import Flask, render_template, request
 import string
-import socket
 from time import sleep, time
-from tqdm import tqdm
 from utils.constants import CHECK_IN_PERIOD_SEC, SHUTDOWN, SIZE_OF_ALPHABET
-from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client
+from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client  # noqa
 from utils.str_num import n_to_nums, nums2str, str2nums
 
 app = Flask(__name__)
+
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/crack')
 def crack():
     hash = request.args.get('md5')
-    num_workers = int(request.args.get('workers')) # type: ignore
+    num_workers = int(request.args.get('workers'))  # type: ignore
 
     start_time = time()
     create_connections(num_workers)
@@ -37,7 +37,9 @@ def crack():
         send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
 
     close_connections(num_workers)
-    return render_template('crack.html', md5=hash, password=password, duration=duration)
+    return render_template('crack.html', md5=hash,
+                           password=password, duration=duration)
+
 
 if __name__ == '__main__':
     print(nums2str(list(range(SIZE_OF_ALPHABET))))

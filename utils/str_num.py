@@ -1,5 +1,6 @@
 from utils.constants import PASSWORD_LEN, SIZE_OF_ALPHABET
 
+
 def n_to_nums(n, b=SIZE_OF_ALPHABET):
     """Convert a positive number n to its digit representation in base b."""
     digits = []
@@ -12,6 +13,7 @@ def n_to_nums(n, b=SIZE_OF_ALPHABET):
     digits.reverse()
     return digits
 
+
 def str2nums(s):
     nums = []
     for c in s:
@@ -21,6 +23,7 @@ def str2nums(s):
             nums.append(ord(c) + 26 - ord('A'))
     return nums
 
+
 def nums2str(nums):
     str_builder = []
     for n in nums:
@@ -29,6 +32,7 @@ def nums2str(nums):
         else:  # 26-51 is A-Z
             str_builder.append(chr(n - 26 + ord('A')))
     return ''.join(str_builder)
+
 
 # A-Z: 65-90, a-z: 97-122
 def str_generator(start_s, end_s):
