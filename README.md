@@ -54,3 +54,23 @@ flask run --host=0.0.0.0 --port=5678
 ### Accessing using a web browser
 
 Video demo: https://youtu.be/ZheDjTzCoqE
+
+## Testing
+
+### Run all tests
+
+```shell
+pytest
+```
+
+### Run a specific testcase
+
+```shell
+pytest -k test_testcase
+```
+
+### Get test coverage
+
+```shel
+pytest --cov=directory
+```
