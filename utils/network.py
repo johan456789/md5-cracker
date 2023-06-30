@@ -5,15 +5,10 @@ from utils.constants import ACK_JOB, DONE_FOUND, JOB, PASSWORD_LEN, PING, SIZE_O
 from utils.str_num import n_to_nums, nums2str
 
 PORT1, PORT2, PORT3 = range(12340, 12343)
-if socket.gethostname() == 'Johans-MacBook-Air.local':
-    LOCALHOST = '127.0.0.1'
-    worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
-                                          (LOCALHOST, PORT2),
-                                          (LOCALHOST, PORT3)]
-else:
-    worker_addr: List[Tuple[str, int]] = [('172.17.3.33', PORT1),
-                                          ('172.17.3.34', PORT2),
-                                          ('172.17.3.35', PORT3)]
+LOCALHOST = '127.0.0.1'
+worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
+                                      (LOCALHOST, PORT2),
+                                      (LOCALHOST, PORT3)]
 print(f'worker_addr: {worker_addr}')
 connections = [None] * len(worker_addr)  # TCP connections
 
