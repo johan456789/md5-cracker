@@ -5,7 +5,57 @@
     Number of workers (3 at max):
     <input autocomplete="off" autofocus name="workers" placeholder="0" type="number" min="1" max="3"]><br>
     MD5 hash:
-    <input autocomplete="off" autofocus name="md5" type="text"]><br>
-    <input type="submit">
+    <input autocomplete="off" autofocus name="md5" type="text" size="40"]><br>
+    <input type="submit" value="Submit">
 </form>
+
+<p>Status: <span id="status">Idle</span></p><p id="duration" style="display: none">Duration: <span id="counter">0.00 second</span></p>
+<p id="cracking" style="display: none;">Hash: <span id="hash"></span></p>
+<p id="password" style="display: none;">Password: <span id="plaintext"></span></p>
+
+<script>
+    const form = document.querySelector('form');
+    const status = document.querySelector('#status');
+    const duration = document.querySelector('#duration');
+    const counter = document.querySelector('#counter');
+    const cracking = document.querySelector('#cracking');
+    const hash = document.querySelector('#hash');
+    const password = document.querySelector('#password');
+    const plaintext = document.querySelector('#plaintext');
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const workers = form.elements.workers.value;
+        const md5 = form.elements.md5.value;
+        if (workers >= 1 && md5 !== '') {
+            status.textContent = 'Running';
+            cracking.style.display = 'block';
+            hash.textContent = form.elements.md5.value;
+            password.style.display = 'none';
+    
+            // start timer
+            duration.style.display = 'block';
+            let milliseconds = 0;
+            let intervalId;
+            intervalId = setInterval(() => {
+                milliseconds++;
+                const seconds = (milliseconds / 100).toFixed(2);
+                counter.textContent = `${seconds} seconds`;
+            }, 10);
+    
+            // send request        
+            fetch(`/crack?workers=${workers}&md5=${md5}`)
+                .then(response => response.json())
+                .then(data => {
+                    status.textContent = 'Done';
+                    password.style.display = 'block';
+                    plaintext.textContent = data.password;
+                    clearInterval(intervalId);
+                    counter.textContent = `${data.duration} seconds`;
+                });
+        } else {
+            alert('Please enter a valid number of workers and MD5 hash');
+        }
+    });
+</script>
 {% endblock %}

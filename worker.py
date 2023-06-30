@@ -11,9 +11,6 @@ ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--port", required=True, help="port number of the server")
 args = vars(ap.parse_args())
 
-shutdown = False
-job_done, password = False, None
-
 
 def brute_force(start_s, end_s, hash):
     # TODO use multiprocessing
@@ -32,6 +29,8 @@ def brute_force(start_s, end_s, hash):
     job_done, password = False, None
 
 
+shutdown = False
+job_done, password = False, None
 daemon = None
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
     HOST = ''

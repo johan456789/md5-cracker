@@ -28,12 +28,12 @@ def create_connections(num_workers):
     Returns:
         list[socket.socket]: A list of TCP connections to worker nodes.
     """
-    connections = [None] * num_workers
     for worker_id in range(num_workers):
         # AF_INET: IPv4, SOCK_STREAM: TCP
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         soc.connect(worker_addr[worker_id])
         connections[worker_id] = soc  # type: ignore
+        assert connections[worker_id] is not None
     return connections
 
 
@@ -49,7 +49,8 @@ def close_connections(connections):
         None
     """
     for conn in connections:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 def distribute_task(num_workers, hash):

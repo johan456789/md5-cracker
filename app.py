@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import string
 from time import sleep, time
 from utils.constants import CHECK_IN_PERIOD_SEC, SHUTDOWN, SIZE_OF_ALPHABET
@@ -19,7 +19,7 @@ def crack():
     num_workers = int(request.args.get('workers'))  # type: ignore
 
     start_time = time()
-    create_connections(num_workers)
+    connections = create_connections(num_workers)
     distribute_task(num_workers, hash)
     password = None
     while not password:
@@ -30,15 +30,13 @@ def crack():
     end_time = time()
     duration = round(end_time - start_time, 2)
     print(f'===\nFound: {password}. It took {duration} seconds.\n===')
-    # TODO AJAX show password
 
     # stop current task among workers
     for worker_id in range(num_workers):
         send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
 
-    close_connections(num_workers)
-    return render_template('crack.html', md5=hash,
-                           password=password, duration=duration)
+    close_connections(connections)
+    return jsonify({'password': password, 'duration': duration})
 
 
 if __name__ == '__main__':
