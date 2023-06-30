@@ -1,8 +1,8 @@
 import socket
 from typing import List, Tuple
 
-from utils.constants import ACK_JOB, DONE_FOUND, JOB, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
-from utils.str_num import n_to_nums, nums2str
+from utils.constants import ACK_JOB, DONE_FOUND, DONE_NOT_FOUND, JOB, NOT_DONE, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
+from utils.str_num import n_to_nums, nums2str, str_count
 
 PORT1, PORT2, PORT3 = range(12340, 12343)
 LOCALHOST = '127.0.0.1'
@@ -93,14 +93,19 @@ def check_in(num_workers):
 
     Returns:
         str: The password if it's cracked, else None.
+        int: Number of strings checked by the workers.
     """
-    # (TODO) handle DONE_NOT_FOUND
+    strings_checked = 0
     for worker_id in range(num_workers):
         response = send_to_client(worker_id, f'{PING}')
         if response[0] == DONE_FOUND:
             password, _ = response[1], response[2]
-            return password
-    return None
+            return password, _
+        elif response[0] == DONE_NOT_FOUND:
+            strings_checked += str_count(response[1], response[2])
+        elif response[0] == NOT_DONE:
+            pass
+    return None, strings_checked
 
 
 def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:

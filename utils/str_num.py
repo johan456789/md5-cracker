@@ -52,3 +52,14 @@ def str_generator(start_s, end_s):
             i -= 1
         if i < 0:
             return
+
+
+def str_count(start_s, end_s):
+    """
+    Returns the number of strings between start_s and end_s (inclusive).
+    """
+    count = 1
+    start_nums, end_nums = str2nums(start_s), str2nums(end_s)
+    for i in range(len(start_nums)):
+        count += (end_nums[i] - start_nums[i]) * SIZE_OF_ALPHABET ** (len(start_nums) - i - 1)
+    return count
