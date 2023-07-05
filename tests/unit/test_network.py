@@ -1,3 +1,4 @@
+import pytest
 from unittest.mock import patch, MagicMock
 from utils.network import create_connections, close_connections, check_in
 from utils.constants import DONE_FOUND, DONE_NOT_FOUND, NOT_DONE
@@ -21,29 +22,30 @@ def test_close_connections(mock_socket):
 
 
 @patch('utils.network.send_to_client')
-def test_check_in(mock_send_to_client):
+@pytest.mark.asyncio
+async def test_check_in(mock_send_to_client):
     responses = [[DONE_FOUND, 'password', 'hash'], [None], [None]]
     mock_send_to_client.side_effect = responses
-    password, _ = check_in(3)
+    password, _ = await check_in(3)
     assert password == 'password'
     mock_send_to_client.assert_called_once()
 
     mock_send_to_client.side_effect = [[NOT_DONE], [NOT_DONE], [NOT_DONE]]
-    password, finished = check_in(3)
+    password, finished = await check_in(3)
     assert password is None
     assert finished == 0
 
     mock_send_to_client.side_effect = [[DONE_NOT_FOUND, 'a', 'c']]
-    password, finished = check_in(1)
+    password, finished = await check_in(1)
     assert password is None
     assert finished == 3
 
     mock_send_to_client.side_effect = [[DONE_NOT_FOUND, 'a', 'c'], [NOT_DONE]]
-    password, finished = check_in(2)
+    password, finished = await check_in(2)
     assert password is None
     assert finished == 3
 
     mock_send_to_client.side_effect = [[DONE_NOT_FOUND, 'a', 'c'], [DONE_NOT_FOUND, 'A', 'C'], [NOT_DONE]]
-    password, finished = check_in(3)
+    password, finished = await check_in(3)
     assert password is None
     assert finished == 6

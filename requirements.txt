@@ -3,3 +3,5 @@ Flask
 tqdm
 pytest
 pytest-cov
+pytest-asyncio
+asgiref

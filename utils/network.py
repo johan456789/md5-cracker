@@ -48,7 +48,7 @@ def close_connections(connections):
             conn.close()
 
 
-def distribute_task(num_workers, hash):
+async def distribute_task(num_workers, hash):
     """
     Distribute the task of cracking the password to multiple workers.
 
@@ -72,10 +72,10 @@ def distribute_task(num_workers, hash):
         start_s = nums2str(n_to_nums(start))
         end_s = nums2str(n_to_nums(min(total_work - 1, start + step - 1)))
 
-        response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
+        response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
         job_acked = response[0]
         while not job_acked:
-            response = send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
+            response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
             if response[0] == ACK_JOB:
                 job_acked = True
 
@@ -83,7 +83,7 @@ def distribute_task(num_workers, hash):
         worker_id = (worker_id + 1) % num_workers
 
 
-def check_in(num_workers):
+async def check_in(num_workers):
     """
     Check in with all workers and return the password
     if it's cracked else None.
@@ -97,7 +97,7 @@ def check_in(num_workers):
     """
     strings_checked = 0
     for worker_id in range(num_workers):
-        response = send_to_client(worker_id, f'{PING}')
+        response = await send_to_client(worker_id, f'{PING}')
         if response[0] == DONE_FOUND:
             password, _ = response[1], response[2]
             return password, _
@@ -108,7 +108,7 @@ def check_in(num_workers):
     return None, strings_checked
 
 
-def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
+async def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
     """
     Sends a command to a worker and waits for a response.
 
@@ -138,7 +138,7 @@ def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
     response = ['']
     if listen:
         # listen for response
-        data = soc.recv(1024)  # receive byte streams with 1024-byte buffer
+        data = soc.recv(1024)  # receive byte streams with 1024-byte buffer # type: ignore
         response = data.decode()
         print(f'Recv fr {worker_id}: {response}')
         response = response.split(' ')
