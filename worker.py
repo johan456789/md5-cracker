@@ -21,17 +21,13 @@ def brute_force(start_s, end_s, hash):
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
         # 'ABCDE': '2ecdde3959051d913f61b14579ea136d'
         if md5(s.encode()).hexdigest() == hash:
-            tqdm.write(f'found: {s}')
+            tqdm.write(f'Worker at {args["port"]} found: {s}')
             job_done, password = True, s
             return
         if shutdown:
             return
-    job_done, password = False, None
 
 
-shutdown = False
-job_done, password = False, None
-daemon = None
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
     HOST = ''
     PORT = int(args['port'])  # port of server
@@ -40,8 +36,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
     soc.listen()
     conn, address = soc.accept()
     print('Connected')
-    while True:
-        job_done, password = False, None
+    shutdown = False
+    while not shutdown:
+        job_done, password = False, None  # TODO race condition. should add lock
         while True:
             data = conn.recv(1024)  # receive byte streams with 1024-byte buffer
             if not data:  # disconnected
@@ -54,10 +51,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
             cmd = int(request[0])
             start_s = end_s = hash = None
             if cmd == JOB:
+                if hash is not None:
+                    raise Exception('WARNING: Received job while already working on a job.')
                 _, start_s, end_s, hash = request
                 conn.sendall(f'{ACK_JOB} {start_s} {end_s} {hash}'.encode())
-                # job_done, password = brute_force(start_s, end_s, hash)
-                shutdown = False
                 daemon = threading.Thread(target=brute_force, args=(start_s, end_s, hash,), daemon=True)
                 daemon.start()
             elif cmd == PING:
@@ -72,5 +69,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
             elif cmd == SHUTDOWN:
                 print('Received shutdown.')
                 shutdown = True
+                break
             else:
                 raise ValueError('Incorrect command value')

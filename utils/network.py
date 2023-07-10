@@ -59,28 +59,29 @@ async def distribute_task(num_workers, hash):
     Returns:
         None
     """
-    # TODO async send task
     # (TODO) handle not acked jobs
     # (TODO) handle failure
     # (TODO) allow different task sizes
     total_work = SIZE_OF_ALPHABET ** PASSWORD_LEN
     step = total_work // num_workers
 
-    worker_id = 0
     start = 0
     while start < total_work:
-        start_s = nums2str(n_to_nums(start))
-        end_s = nums2str(n_to_nums(min(total_work - 1, start + step - 1)))
+        for worker_id in range(num_workers):
+            if start >= total_work:
+                break
+            # TODO skip if not idle
+            start_s = nums2str(n_to_nums(start))
+            end_s = nums2str(n_to_nums(min(total_work - 1, start + step - 1)))
 
-        response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
-        job_acked = response[0]
-        while not job_acked:
-            response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
-            if response[0] == ACK_JOB:
-                job_acked = True
-
-        start += step
-        worker_id = (worker_id + 1) % num_workers
+            response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
+            job_acked = response[0]
+            while not job_acked:
+                # TODO set a max number of retries
+                response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
+                if response[0] == ACK_JOB:
+                    job_acked = True
+            start += step
 
 
 async def check_in(num_workers):

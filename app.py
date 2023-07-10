@@ -1,12 +1,13 @@
 import asyncio
 from flask import Flask, render_template, request, jsonify
 import string
-from time import sleep, time
-from utils.constants import CHECK_IN_PERIOD_SEC, PASSWORD_LEN, SHUTDOWN, SIZE_OF_ALPHABET
+from time import time
+from utils.constants import CHECK_IN_PERIOD_SEC, SHUTDOWN, SIZE_OF_ALPHABET
 from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client  # noqa
 from utils.str_num import n_to_nums, nums2str, str2nums
 
 app = Flask(__name__)
+
 
 @app.route('/')
 def index():
@@ -17,7 +18,6 @@ def index():
 async def crack():
     hash = request.args.get('md5')
     num_workers = int(request.args.get('workers'))  # type: ignore
-    total = SIZE_OF_ALPHABET ** PASSWORD_LEN
     finished = 0
 
     start_time = time()
