@@ -15,7 +15,7 @@ def test_create_connections(mock_socket):
 def test_close_connections(mock_socket):
     mock_socket.return_value = MagicMock()
     connections = create_connections(3)
-    close_connections(connections)
+    close_connections()
     for conn in connections:
         if conn is not None:
             assert conn.closed
