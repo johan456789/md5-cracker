@@ -1,3 +1,4 @@
+import asyncio
 import socket
 from typing import List, Tuple
 
@@ -11,6 +12,7 @@ worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
                                       (LOCALHOST, PORT3)]
 print(f'worker_addr: {worker_addr}')
 connections = [None] * len(worker_addr)  # TCP connections
+idling = [True] * len(worker_addr)  # whether a worker is idling
 
 
 def create_connections(num_workers):
@@ -67,10 +69,13 @@ async def distribute_task(num_workers, hash):
 
     start = 0
     while start < total_work:
+        await asyncio.sleep(0.1)
         for worker_id in range(num_workers):
             if start >= total_work:
                 break
-            # TODO skip if not idle
+            if not idling[worker_id]:
+                print(f'worker {worker_id} is working, skipped')
+                continue
             start_s = nums2str(n_to_nums(start))
             end_s = nums2str(n_to_nums(min(total_work - 1, start + step - 1)))
 
@@ -81,6 +86,7 @@ async def distribute_task(num_workers, hash):
                 response = await send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
                 if response[0] == ACK_JOB:
                     job_acked = True
+            idling[worker_id] = False
             start += step
 
 
@@ -99,12 +105,17 @@ async def check_in(num_workers):
     strings_checked = 0
     for worker_id in range(num_workers):
         response = await send_to_client(worker_id, f'{PING}')
-        if response[0] == DONE_FOUND:
-            password, _ = response[1], response[2]
-            return password, _
-        elif response[0] == DONE_NOT_FOUND:
-            strings_checked += str_count(response[1], response[2])
-        elif response[0] == NOT_DONE:
+        status = response[0]
+        print(f'worker {worker_id} report status: {status}')
+        if status in (DONE_FOUND, DONE_NOT_FOUND):
+            idling[worker_id] = True
+            if status == DONE_FOUND:
+                password, _ = response[1], response[2]
+                return password, _
+            elif status == DONE_NOT_FOUND:
+                strings_checked += str_count(response[1], response[2])
+                print(f'strings checked: {strings_checked}')
+        elif status == NOT_DONE:
             pass
     return None, strings_checked
 
@@ -134,14 +145,14 @@ async def send_to_client(worker_id: int, cmd: str, listen: bool = True) -> List:
     if soc is None:
         raise ValueError(f'No connection to worker {worker_id}')
     soc.send(cmd.encode())
-    print(f'Sent to {worker_id}: {cmd}')
+    print(f'Sent to worker {worker_id}: {cmd}')
 
     response = ['']
     if listen:
         # listen for response
         data = soc.recv(1024)  # receive byte streams with 1024-byte buffer # type: ignore
         response = data.decode()
-        print(f'Recv fr {worker_id}: {response}')
+        print(f'Recv fr worker {worker_id}: {response}')
         response = response.split(' ')
         response[0] = int(response[0])  # type: ignore
     return response

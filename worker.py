@@ -17,7 +17,6 @@ def brute_force(start_s, end_s, hash):
     global job_done, password, shutdown
     for s in tqdm(str_generator(start_s, end_s), total=SIZE_OF_ALPHABET ** 5):
         # hashes
-        # 'ABC': '902fbdd2b1df0c4f70b4a5d23525e932'  # ~3s
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
         # 'ABCDE': '2ecdde3959051d913f61b14579ea136d'
         if md5(s.encode()).hexdigest() == hash:
@@ -26,6 +25,7 @@ def brute_force(start_s, end_s, hash):
             return
         if shutdown:
             return
+    job_done = True  # no password found
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP

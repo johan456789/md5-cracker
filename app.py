@@ -2,7 +2,7 @@ import asyncio
 from flask import Flask, render_template, request, jsonify
 import string
 from time import time
-from utils.constants import CHECK_IN_PERIOD_SEC, SHUTDOWN, SIZE_OF_ALPHABET
+from utils.constants import CHECK_IN_PERIOD_SEC, PASSWORD_LEN, SHUTDOWN, SIZE_OF_ALPHABET
 from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client  # noqa
 from utils.str_num import n_to_nums, nums2str, str2nums
 
@@ -18,6 +18,7 @@ def index():
 async def crack():
     hash = request.args.get('md5')
     num_workers = int(request.args.get('workers'))  # type: ignore
+    total_work = SIZE_OF_ALPHABET ** PASSWORD_LEN
     finished = 0
 
     start_time = time()
@@ -30,6 +31,9 @@ async def crack():
             finished += finish_count
             print(f'sleep for {CHECK_IN_PERIOD_SEC} secs')
             await asyncio.sleep(CHECK_IN_PERIOD_SEC)
+            print(f'Progress: {round(finished / total_work * 100, 2)}%')
+        else:
+            print('Progress: 100%')
     end_time = time()
     duration = round(end_time - start_time, 2)
     print(f'===\nFound: {password}. It took {duration} seconds.\n===')
