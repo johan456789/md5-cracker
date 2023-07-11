@@ -1,12 +1,22 @@
 import asyncio
 from flask import Flask, render_template, request, jsonify
 import string
+import atexit
 from time import time
-from utils.constants import CHECK_IN_PERIOD_SEC, PASSWORD_LEN, SHUTDOWN, SIZE_OF_ALPHABET
+from utils.constants import CHECK_IN_PERIOD_SEC, MAX_NUM_WORKERS, PASSWORD_LEN, SHUTDOWN, SIZE_OF_ALPHABET
 from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client  # noqa
 from utils.str_num import n_to_nums, nums2str, str2nums
 
 app = Flask(__name__)
+create_connections(MAX_NUM_WORKERS)
+
+
+async def teardown(exception):
+    # stop current task among workers
+    for worker_id in range(MAX_NUM_WORKERS):
+        await send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
+    close_connections()
+atexit.register(teardown)  # type: ignore
 
 
 @app.route('/')
@@ -22,7 +32,7 @@ async def crack():
     finished = 0
 
     start_time = time()
-    connections = create_connections(num_workers)
+    create_connections(num_workers)
     asyncio.create_task(distribute_task(num_workers, hash))
     password = None
     while not password:
@@ -38,11 +48,6 @@ async def crack():
     duration = round(end_time - start_time, 2)
     print(f'===\nFound: {password}. It took {duration} seconds.\n===')
 
-    # stop current task among workers
-    for worker_id in range(num_workers):
-        await send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
-
-    close_connections(connections)
     return jsonify({'password': password, 'duration': duration})
 
 
