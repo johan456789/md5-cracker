@@ -34,7 +34,7 @@ def create_connections(num_workers):
     return connections
 
 
-def close_connections(connections):
+def close_connections():
     """
     Close all connections in the given list of connections.
 
