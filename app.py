@@ -7,8 +7,14 @@ from utils.constants import CHECK_IN_PERIOD_SEC, MAX_NUM_WORKERS, PASSWORD_LEN, 
 from utils.network import check_in, close_connections, create_connections, distribute_task, send_to_client  # noqa
 from utils.str_num import n_to_nums, nums2str, str2nums
 
-app = Flask(__name__)
-create_connections(MAX_NUM_WORKERS)
+
+def create_app():
+    app = Flask(__name__)
+    create_connections(MAX_NUM_WORKERS)
+    return app
+
+
+app = create_app()
 
 
 async def teardown(exception):
@@ -32,7 +38,6 @@ async def crack():
     finished = 0
 
     start_time = time()
-    create_connections(num_workers)
     asyncio.create_task(distribute_task(num_workers, hash))
     password = None
     while not password:

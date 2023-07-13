@@ -2,17 +2,17 @@ import asyncio
 import socket
 from typing import List, Tuple
 
-from utils.constants import ACK_JOB, DONE_FOUND, DONE_NOT_FOUND, JOB, NOT_DONE, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
+from utils.constants import ACK_JOB, DONE_FOUND, DONE_NOT_FOUND, JOB, MAX_NUM_WORKERS, NOT_DONE, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
 from utils.str_num import n_to_nums, nums2str, str_count
 
-PORT1, PORT2, PORT3 = range(12340, 12343)
-LOCALHOST = '127.0.0.1'
-worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
-                                      (LOCALHOST, PORT2),
-                                      (LOCALHOST, PORT3)]
-print(f'worker_addr: {worker_addr}')
-connections = [None] * len(worker_addr)  # TCP connections
-idling = [True] * len(worker_addr)  # whether a worker is idling
+# PORT1, PORT2, PORT3 = range(12340, 12343)
+# LOCALHOST = '127.0.0.1'
+# worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
+#                                       (LOCALHOST, PORT2),
+#                                       (LOCALHOST, PORT3)]
+ports = []
+connections = [None] * MAX_NUM_WORKERS  # TCP connections
+idling = [True] * MAX_NUM_WORKERS  # whether a worker is idling
 
 
 def create_connections(num_workers):
@@ -25,12 +25,28 @@ def create_connections(num_workers):
     Returns:
         list[socket.socket]: A list of TCP connections to worker nodes.
     """
+    print(f'creating {num_workers} connections')
+    port = 12340
     for worker_id in range(num_workers):
         # AF_INET: IPv4, SOCK_STREAM: TCP
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        soc.connect(worker_addr[worker_id])
-        connections[worker_id] = soc  # type: ignore
-        assert connections[worker_id] is not None
+        success = False
+        while not success:
+            try:
+                print(f'connecting to localhost: {port}')
+                soc.connect(('localhost', port))
+                print(f'connected to {port}')
+                connections[worker_id] = soc  # type: ignore
+                assert connections[worker_id] is not None
+                success = True
+                ports.append(port)
+            except ConnectionRefusedError as e:
+                print(f'{e}: failed to connect to {port}')
+                pass
+            except OSError as e:
+                raise Exception(f'{e}: failed to connect to {port}')
+            port += 1
+    print(f'connections created at {ports}')
     return connections
 
 

@@ -16,10 +16,10 @@ def password_and_hash(request):
 def server_and_workers():
     # Setup - Start the server and workers
     PORT1, PORT2, PORT3 = range(12340, 12343)
-    server_process = subprocess.Popen(['flask', 'run', '--host=0.0.0.0', '--port=5678'])
     worker_process1 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT1)])
     worker_process2 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT2)])
     worker_process3 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT3)])
+    server_process = subprocess.Popen(['flask', 'run', '--host=0.0.0.0', '--port=5678'])
     time.sleep(1)
 
     yield
