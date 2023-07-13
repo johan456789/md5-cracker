@@ -3,6 +3,9 @@ import subprocess
 import time
 import requests
 
+from utils.constants import MAX_NUM_WORKERS
+from utils.network import ports
+
 
 @pytest.fixture(scope="module", params=[('abc', '900150983cd24fb0d6963f7d28e17f72'),
                                         ('bMf', 'b6efca0817e70224f8d0ae8f36a0ace9'),
@@ -15,10 +18,11 @@ def password_and_hash(request):
 @pytest.fixture(scope="module")
 def server_and_workers():
     # Setup - Start the server and workers
-    PORT1, PORT2, PORT3 = range(12340, 12343)
-    worker_process1 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT1)])
-    worker_process2 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT2)])
-    worker_process3 = subprocess.Popen(['python', 'worker.py', '-p', str(PORT3)])
+    worker_processes = []
+    print(f'testing on ports: {ports}')
+    for i in range(len(ports)):
+        process = subprocess.Popen(['python', 'worker.py', '-p', str(ports[i])])
+        worker_processes.append(process)
     server_process = subprocess.Popen(['flask', 'run', '--host=0.0.0.0', '--port=5678'])
     time.sleep(1)
 
@@ -26,9 +30,8 @@ def server_and_workers():
 
     # Teardown - Terminate the processes
     server_process.kill()
-    worker_process1.kill()
-    worker_process2.kill()
-    worker_process3.kill()
+    for process in worker_processes:
+        process.kill()
 
 
 def test_crack_password(server_and_workers, password_and_hash):

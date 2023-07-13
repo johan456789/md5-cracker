@@ -1,21 +1,30 @@
 import asyncio
 import socket
-from typing import List, Tuple
+import subprocess
+import time
+from typing import List, Optional
+from flask import current_app
 
 from utils.constants import ACK_JOB, DONE_FOUND, DONE_NOT_FOUND, JOB, MAX_NUM_WORKERS, NOT_DONE, PASSWORD_LEN, PING, SIZE_OF_ALPHABET  # noqa
 from utils.str_num import n_to_nums, nums2str, str_count
 
-# PORT1, PORT2, PORT3 = range(12340, 12343)
-# LOCALHOST = '127.0.0.1'
-# worker_addr: List[Tuple[str, int]] = [(LOCALHOST, PORT1),
-#                                       (LOCALHOST, PORT2),
-#                                       (LOCALHOST, PORT3)]
-ports = []
+
+def get_free_port():
+    s = socket.socket()
+    s.bind(('', 0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
+
+# ports = [get_free_port() for _ in range(MAX_NUM_WORKERS)]
+ports = list(range(12340, 12340 + MAX_NUM_WORKERS))
 connections = [None] * MAX_NUM_WORKERS  # TCP connections
 idling = [True] * MAX_NUM_WORKERS  # whether a worker is idling
+worker_processes: List[Optional[subprocess.Popen]] = [None] * MAX_NUM_WORKERS  # worker processes. used only in debug mode
 
 
-def create_connections(num_workers):
+def create_connections(num_workers, debug=False):
     """
     Create TCP connections to worker nodes.
 
@@ -25,32 +34,39 @@ def create_connections(num_workers):
     Returns:
         list[socket.socket]: A list of TCP connections to worker nodes.
     """
+
+    if debug:
+        print('running in debug mode, start worker processes on free ports')
+
+        # for i in range(num_workers):
+        #     ports[i] = get_free_port()
+        # print(f'available ports: {ports}')
+
+        print(f'starting workers on {ports}')
+        for i in range(len(ports)):
+            worker_process = subprocess.Popen(['python', 'worker.py', '-p', str(ports[i])])
+            worker_processes[i] = worker_process
+        time.sleep(1)
+
     print(f'creating {num_workers} connections')
-    port = 12340
     for worker_id in range(num_workers):
         # AF_INET: IPv4, SOCK_STREAM: TCP
         soc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        success = False
-        while not success:
-            try:
-                print(f'connecting to localhost: {port}')
-                soc.connect(('localhost', port))
-                print(f'connected to {port}')
-                connections[worker_id] = soc  # type: ignore
-                assert connections[worker_id] is not None
-                success = True
-                ports.append(port)
-            except ConnectionRefusedError as e:
-                print(f'{e}: failed to connect to {port}')
-                pass
-            except OSError as e:
-                raise Exception(f'{e}: failed to connect to {port}')
-            port += 1
+        try:
+            print(f'connecting to localhost: {ports[worker_id]}')
+            soc.connect(('localhost', ports[worker_id]))
+            print(f'connected to {ports[worker_id]}')
+            connections[worker_id] = soc  # type: ignore
+            assert connections[worker_id] is not None
+        except ConnectionRefusedError as e:
+            raise Exception(f'{e}: failed to connect to {ports[worker_id]}')
+        except OSError as e:
+            raise Exception(f'{e}: failed to connect to {ports[worker_id]}')
     print(f'connections created at {ports}')
     return connections
 
 
-def close_connections():
+def close_connections(debug=False):
     """
     Close all connections in the given list of connections.
 
@@ -64,6 +80,10 @@ def close_connections():
     for conn in connections:
         if conn:
             conn.close()
+    if debug:
+        for process in worker_processes:
+            assert process is not None
+            process.kill()
 
 
 async def distribute_task(num_workers, hash):

@@ -10,18 +10,23 @@ from utils.str_num import n_to_nums, nums2str, str2nums
 
 def create_app():
     app = Flask(__name__)
-    create_connections(MAX_NUM_WORKERS)
+    with app.app_context():
+        create_connections(MAX_NUM_WORKERS, debug=app.debug)
     return app
 
 
+def teardown():
+    async def helper():
+        # stop current task among workers
+        for worker_id in range(MAX_NUM_WORKERS):
+            await send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
+        close_connections(debug=app.debug)
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(helper())
+
+
 app = create_app()
-
-
-async def teardown(exception):
-    # stop current task among workers
-    for worker_id in range(MAX_NUM_WORKERS):
-        await send_to_client(worker_id, f'{SHUTDOWN}', listen=False)
-    close_connections()
 atexit.register(teardown)  # type: ignore
 
 
