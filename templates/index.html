@@ -9,7 +9,9 @@
     <input type="submit" value="Submit">
 </form>
 
-<p>Status: <span id="status">Idle</span></p><p id="duration" style="display: none">Duration: <span id="counter">0.00 second</span></p>
+<p>Status: <span id="status">Idle</span></p>
+<p id="duration" style="display: none">Duration: <span id="timer">0.00 second</span></p>
+<p id="progress" style="display: none;">Progress: <span id="progressValue">0.00%</span></p>
 <p id="cracking" style="display: none;">Hash: <span id="hash"></span></p>
 <p id="password" style="display: none;">Password: <span id="plaintext"></span></p>
 
@@ -17,7 +19,9 @@
     const form = document.querySelector('form');
     const status = document.querySelector('#status');
     const duration = document.querySelector('#duration');
-    const counter = document.querySelector('#counter');
+    const progress = document.querySelector('#progress');
+    const progressValue = document.querySelector('#progressValue');
+    const timer = document.querySelector('#timer');
     const cracking = document.querySelector('#cracking');
     const hash = document.querySelector('#hash');
     const password = document.querySelector('#password');
@@ -29,6 +33,7 @@
         const md5 = form.elements.md5.value;
         if (workers >= 1 && md5 !== '') {
             status.textContent = 'Running';
+            progressValue.textContent = `${(0).toFixed(2)}%`; // change progress to 0%
             cracking.style.display = 'block';
             hash.textContent = form.elements.md5.value;
             password.style.display = 'none';
@@ -36,22 +41,34 @@
             // start timer
             duration.style.display = 'block';
             let milliseconds = 0;
-            let intervalId;
-            intervalId = setInterval(() => {
+            let timerIntervalId;
+            timerIntervalId = setInterval(() => {
                 milliseconds++;
                 const seconds = (milliseconds / 100).toFixed(2);
-                counter.textContent = `${seconds} seconds`;
+                timer.textContent = `${seconds} seconds`;
             }, 10);
+
+            // start progress updater
+            progress.style.display = 'block';
+            progressIntervalId = setInterval(() => {
+                fetch(`/progress`)
+                    .then(response => response.json())
+                    .then(data => {
+                        progressValue.textContent = `${(data.progress * 100).toFixed(2)}%`;
+                    });
+            }, 500);
     
             // send request        
             fetch(`/crack?workers=${workers}&md5=${md5}`)
                 .then(response => response.json())
                 .then(data => {
                     status.textContent = 'Done';
+                    progressValue.textContent = `${(100).toFixed(2)}%`; // change progress to 100%
                     password.style.display = 'block';
                     plaintext.textContent = data.password;
-                    clearInterval(intervalId);
-                    counter.textContent = `${data.duration} seconds`;
+                    clearInterval(timerIntervalId);
+                    clearInterval(progressIntervalId);
+                    timer.textContent = `${data.duration} seconds`;
                 });
         } else {
             alert('Please enter a valid number of workers and MD5 hash');

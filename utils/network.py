@@ -43,11 +43,11 @@ class Network:
         PASSWORD_LEN = int(os.environ.get('PASSWORD_LEN'))  # type: ignore
         MAX_NUM_WORKERS = int(os.environ.get('MAX_NUM_WORKERS'))  # type: ignore
         total_work = SIZE_OF_ALPHABET ** PASSWORD_LEN
-        step = total_work // MAX_NUM_WORKERS // 10
+        step = total_work // MAX_NUM_WORKERS // 7
 
         start = 0
         while start < total_work:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(1)
             for worker_id in range(MAX_NUM_WORKERS):
                 if start >= total_work:
                     break
@@ -60,7 +60,7 @@ class Network:
                 response = await self.send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')
                 job_acked = response[0]
                 while not job_acked:
-                    # TODO set a max number of retries
+                    # TODO set a max number of retries, should sleep for a short time to allow checking in
                     response = await self.send_to_client(worker_id, f'{JOB} {start_s} {end_s} {hash}')  # noqa
                     if response[0] == ACK_JOB:
                         job_acked = True
