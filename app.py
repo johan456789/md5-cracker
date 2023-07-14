@@ -14,6 +14,7 @@ from config import get_config
 def create_app(config, network):
     app = Flask(__name__)
     app.config.from_object(config)
+    progress = 0
 
     @app.route('/')
     def index():
@@ -21,6 +22,9 @@ def create_app(config, network):
 
     @app.route('/crack')
     async def crack():
+        # TODO: allow one active cracking task at a time
+        global progress
+        progress = 0
         CHECK_IN_PERIOD_SEC = int(os.environ.get('CHECK_IN_PERIOD_SEC'))  # type: ignore
         PASSWORD_LEN = int(os.environ.get('PASSWORD_LEN'))  # type: ignore
 
@@ -35,16 +39,21 @@ def create_app(config, network):
             password, finish_count = await network.check_in()
             if not password:
                 finished += finish_count
-                print(f'sleep for {CHECK_IN_PERIOD_SEC} secs')
                 await asyncio.sleep(CHECK_IN_PERIOD_SEC)
-                print(f'Progress: {round(finished / total_work * 100, 2)}%')
+                progress = finished / total_work
             else:
-                print('Progress: 100%')
+                progress = 1
+            print(f'Progress: {progress * 100:.2f}%')
         end_time = time.time()
         duration = round(end_time - start_time, 2)
         print(f'===\nFound: {password}. It took {duration} seconds.\n===')
 
         return jsonify({'password': password, 'duration': duration})
+
+    @app.route('/progress')
+    def get_progress():
+        global progress
+        return jsonify({'progress': progress})
 
     return app
 
