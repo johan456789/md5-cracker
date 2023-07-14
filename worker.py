@@ -4,7 +4,7 @@ import threading
 from hashlib import md5
 from tqdm import tqdm
 
-from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN  # noqa
+from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN
 from utils.str_num import str_generator
 
 ap = argparse.ArgumentParser()
