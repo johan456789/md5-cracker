@@ -2,8 +2,11 @@ import pytest
 import requests
 
 
+# @pytest.fixture(scope="module", params=[('abc', '900150983cd24fb0d6963f7d28e17f72')])
 @pytest.fixture(scope="module", params=[('abc', '900150983cd24fb0d6963f7d28e17f72'),
-                                        ])
+                                        ('bMf', 'b6efca0817e70224f8d0ae8f36a0ace9'),
+                                        ('fks', '9181ab10cc2003eaa38dd19a0603ab2d'),
+                                        ('ABC', '902fbdd2b1df0c4f70b4a5d23525e932')])
 def password_and_hash(request):
     return request.param
 

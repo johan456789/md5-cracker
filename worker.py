@@ -66,6 +66,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
                         conn.sendall(f'{DONE_FOUND} {password} {hash}'.encode())
                     else:
                         conn.sendall(f'{DONE_NOT_FOUND} {start_s} {end_s}'.encode())
+                    break  # get ready for next job
             elif cmd == SHUTDOWN:
                 print('Received shutdown.')
                 shutdown = True
