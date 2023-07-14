@@ -39,6 +39,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
     shutdown = False
     while not shutdown:
         job_done, password = False, None  # TODO race condition. should add lock
+        start_s = end_s = hash = None
         while True:
             data = conn.recv(1024)  # receive byte streams with 1024-byte buffer
             if not data:  # disconnected
@@ -49,7 +50,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
 
             request = data.decode().split(' ')
             cmd = int(request[0])
-            start_s = end_s = hash = None
             if cmd == JOB:
                 if hash is not None:
                     raise Exception('WARNING: Received job while already working on a job.')

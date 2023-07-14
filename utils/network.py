@@ -40,11 +40,10 @@ class Network:
     async def distribute_task(self, hash):
         # (TODO) handle not acked jobs
         # (TODO) handle failure
-        # (TODO) allow different task sizes
         PASSWORD_LEN = int(os.environ.get('PASSWORD_LEN'))  # type: ignore
         MAX_NUM_WORKERS = int(os.environ.get('MAX_NUM_WORKERS'))  # type: ignore
         total_work = SIZE_OF_ALPHABET ** PASSWORD_LEN
-        step = total_work // MAX_NUM_WORKERS
+        step = total_work // MAX_NUM_WORKERS // 10
 
         start = 0
         while start < total_work:
@@ -81,8 +80,10 @@ class Network:
                     password, _ = response[1], response[2]
                     return password, _
                 elif status == DONE_NOT_FOUND:
-                    strings_checked += str_count(response[1], response[2])
-                    print(f'strings checked: {strings_checked}')
+                    _, start_s, end_s = response
+                    assert start_s is not None and end_s is not None
+                    strings_checked += str_count(start_s, end_s)
+                    print(f'strings checked ({start_s}, {end_s}): {strings_checked}')
             elif status == NOT_DONE:
                 pass
         return None, strings_checked

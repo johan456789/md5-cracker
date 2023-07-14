@@ -72,7 +72,6 @@ def main():
     # TODO: load port settings from env vars for prod
     MAX_NUM_WORKERS = int(os.environ.get('MAX_NUM_WORKERS'))  # type: ignore
     ports = get_free_ports(MAX_NUM_WORKERS)
-    print(ports)
 
     # start workers on available ports
     print(f'starting workers on {ports}')
