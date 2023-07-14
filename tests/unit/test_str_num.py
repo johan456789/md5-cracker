@@ -1,9 +1,10 @@
+import os
 from string import ascii_letters
 from utils.str_num import n_to_nums, str2nums, nums2str, str_count, str_generator
-from utils.constants import PASSWORD_LEN
 
 
 def test_n_to_nums():
+    PASSWORD_LEN = int(os.environ.get('PASSWORD_LEN'))  # type: ignore
     assert n_to_nums(0, b=2) == [0] * PASSWORD_LEN
     n, nums_wo_padding = 3, [1, 1]
     expected = [0] * (PASSWORD_LEN - len(nums_wo_padding)) + nums_wo_padding

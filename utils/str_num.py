@@ -1,14 +1,16 @@
-from utils.constants import PASSWORD_LEN, SIZE_OF_ALPHABET
+import os
+from utils.constants import SIZE_OF_ALPHABET
 
 
 def n_to_nums(n, b=SIZE_OF_ALPHABET):
     """Convert a positive number n to its digit representation in base b."""
+    PASSWORD_LEN = int(os.environ.get('PASSWORD_LEN'))  # type: ignore
     digits = []
     while n > 0:
         digits.append(n % b)
         n = n // b
     # pad to PASSWORD_LEN
-    while len(digits) < PASSWORD_LEN:
+    while len(digits) < PASSWORD_LEN:  # type: ignore
         digits.append(0)
     digits.reverse()
     return digits
