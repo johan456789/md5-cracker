@@ -11,10 +11,12 @@ from utils.network import Network
 from config import get_config
 
 
+progress = 0
+
+
 def create_app(config, network):
     app = Flask(__name__)
     app.config.from_object(config)
-    progress = 0
 
     @app.route('/')
     def index():

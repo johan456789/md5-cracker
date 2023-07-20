@@ -1,7 +1,14 @@
 import os
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from utils.constants import DONE_FOUND, DONE_NOT_FOUND, NOT_DONE
+from utils.constants import DONE_FOUND, DONE_NOT_FOUND, NOT_DONE, PING
+
+
+# Tests that send_to_client raises a ValueError if there is no connection to the worker
+@pytest.mark.asyncio
+async def test_send_to_client_no_connection(network):
+    with pytest.raises(ValueError):
+        await network.send_to_client(0, PING)
 
 
 @patch('utils.network.socket.socket')
