@@ -1,7 +1,10 @@
 # Distributed MD5 Cracker
 
 - Supports uppercase and lowercase English characters
-- Distributes tasks among worker nodes
+- Distributes tasks among a certain number of worker nodes
+
+![image](https://github.com/johan456789/md5-cracker/assets/14802181/e0110273-1959-4127-8642-660bce590dd5)
+
 
 ## Usage
 
