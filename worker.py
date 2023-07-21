@@ -10,6 +10,7 @@ from utils.str_num import str_generator
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--port", required=True, help="port number of the server")
 args = vars(ap.parse_args())
+shutdown = False
 
 
 class Job:
@@ -53,47 +54,63 @@ def brute_force(job):
     job.update(True, None)
 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
-    HOST = ''
-    PORT = int(args['port'])  # port of server
+def accept_new_job(job, conn, start_s, end_s, hash):
+    if job.is_running:
+        raise Exception('WARNING: Received job while already working on a job.')
+    job.set(start_s, end_s, hash)
+    conn.sendall(f'{ACK_JOB} {job.start_s} {job.end_s} {job.hash}'.encode())
+    daemon = threading.Thread(target=brute_force, args=(job,), daemon=True)
+    daemon.start()
 
-    soc.bind((HOST, PORT))
-    soc.listen()
-    conn, address = soc.accept()
-    print('Connected')
-    shutdown = False
-    while not shutdown:
-        job = Job()
-        while True:
-            data = conn.recv(1024)  # receive byte streams with 1024-byte buffer
-            if not data:  # disconnected
-                print('Disconnected. Waiting for connection.')
-                conn, address = soc.accept()
-                print('Connected')
-                break
 
-            request = data.decode().split(' ')
-            cmd = int(request[0])
-            if cmd == JOB:
-                if job.is_running:
-                    raise Exception('WARNING: Received job while already working on a job.')
-                job.set(*request[1:])
-                conn.sendall(f'{ACK_JOB} {job.start_s} {job.end_s} {job.hash}'.encode())
-                daemon = threading.Thread(target=brute_force, args=(job,), daemon=True)
-                daemon.start()
-            elif cmd == PING:
-                print(job.is_done, job.password)
-                if not job.is_done:
-                    conn.sendall(f'{NOT_DONE}'.encode())
+def check_work_done(job, conn) -> bool:
+    print(job.is_done, job.password)
+    if not job.is_done:
+        conn.sendall(f'{NOT_DONE}'.encode())
+        return False
+
+    if job.password:
+        conn.sendall(f'{DONE_FOUND} {job.password} {job.hash}'.encode())
+    else:
+        conn.sendall(f'{DONE_NOT_FOUND} {job.start_s} {job.end_s}'.encode())
+    return True
+
+
+def main():
+    global shutdown
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
+        HOST = ''
+        PORT = int(args['port'])  # port of server
+
+        soc.bind((HOST, PORT))
+        soc.listen()
+        conn, address = soc.accept()
+        print('Connected')
+        while not shutdown:
+            job = Job()
+            while True:
+                data = conn.recv(1024)  # receive byte streams with 1024-byte buffer
+                if not data:  # disconnected
+                    print('Disconnected. Waiting for connection.')
+                    conn, address = soc.accept()
+                    print('Connected')
+                    break
+
+                request = data.decode().split(' ')
+                cmd = int(request[0])
+                if cmd == JOB:
+                    accept_new_job(job, conn, *request[1:])
+                elif cmd == PING:
+                    if check_work_done(job, conn):
+                        break  # get ready for next job
+                elif cmd == SHUTDOWN:
+                    print('Received shutdown.')
+                    shutdown = True
+                    break
                 else:
-                    if job.password:
-                        conn.sendall(f'{DONE_FOUND} {job.password} {job.hash}'.encode())
-                    else:
-                        conn.sendall(f'{DONE_NOT_FOUND} {job.start_s} {job.end_s}'.encode())
-                    break  # get ready for next job
-            elif cmd == SHUTDOWN:
-                print('Received shutdown.')
-                shutdown = True
-                break
-            else:
-                raise ValueError('Incorrect command value')
+                    print(f'Unknown command: {cmd}')
+                    raise ValueError('Incorrect command value')
+
+
+if __name__ == '__main__':
+    main()
