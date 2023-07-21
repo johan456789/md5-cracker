@@ -12,20 +12,45 @@ ap.add_argument("-p", "--port", required=True, help="port number of the server")
 args = vars(ap.parse_args())
 
 
-def brute_force(start_s, end_s, hash):
+class Job:
+    def __init__(self):
+        self.is_running = False
+        self.start_s = None
+        self.end_s = None
+        self.hash = None
+        self.is_done = False
+        self.password = None
+
+    def set(self, start_s, end_s, hash):
+        assert not self.is_running
+        self.is_running = True
+        self.start_s = start_s
+        self.end_s = end_s
+        self.hash = hash
+        self.is_done = False
+        self.password = None
+
+    def update(self, is_done, password):
+        if is_done:
+            self.is_running = False
+        self.is_done = is_done
+        self.password = password
+
+
+def brute_force(job):
     # TODO use multiprocessing
-    global job_done, password, shutdown
-    for s in tqdm(str_generator(start_s, end_s), total=SIZE_OF_ALPHABET ** 5):
+    global shutdown
+    for s in tqdm(str_generator(job.start_s, job.end_s), total=SIZE_OF_ALPHABET ** 5):
         # hashes
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
         # 'ABCDE': '2ecdde3959051d913f61b14579ea136d'
-        if md5(s.encode()).hexdigest() == hash:
+        if md5(s.encode()).hexdigest() == job.hash:
             tqdm.write(f'Worker at {args["port"]} found: {s}')
-            job_done, password = True, s
+            job.update(True, s)
             return
         if shutdown:
             return
-    job_done = True  # no password found
+    job.update(True, None)
 
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
@@ -38,8 +63,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
     print('Connected')
     shutdown = False
     while not shutdown:
-        job_done, password = False, None  # TODO race condition. should add lock
-        start_s = end_s = hash = None
+        job = Job()
         while True:
             data = conn.recv(1024)  # receive byte streams with 1024-byte buffer
             if not data:  # disconnected
@@ -51,21 +75,21 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4,
             request = data.decode().split(' ')
             cmd = int(request[0])
             if cmd == JOB:
-                if hash is not None:
+                if job.is_running:
                     raise Exception('WARNING: Received job while already working on a job.')
-                _, start_s, end_s, hash = request
-                conn.sendall(f'{ACK_JOB} {start_s} {end_s} {hash}'.encode())
-                daemon = threading.Thread(target=brute_force, args=(start_s, end_s, hash,), daemon=True)
+                job.set(*request[1:])
+                conn.sendall(f'{ACK_JOB} {job.start_s} {job.end_s} {job.hash}'.encode())
+                daemon = threading.Thread(target=brute_force, args=(job,), daemon=True)
                 daemon.start()
             elif cmd == PING:
-                print(job_done, password)
-                if not job_done:
+                print(job.is_done, job.password)
+                if not job.is_done:
                     conn.sendall(f'{NOT_DONE}'.encode())
                 else:
-                    if password:
-                        conn.sendall(f'{DONE_FOUND} {password} {hash}'.encode())
+                    if job.password:
+                        conn.sendall(f'{DONE_FOUND} {job.password} {job.hash}'.encode())
                     else:
-                        conn.sendall(f'{DONE_NOT_FOUND} {start_s} {end_s}'.encode())
+                        conn.sendall(f'{DONE_NOT_FOUND} {job.start_s} {job.end_s}'.encode())
                     break  # get ready for next job
             elif cmd == SHUTDOWN:
                 print('Received shutdown.')
