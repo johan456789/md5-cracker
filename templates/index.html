@@ -11,7 +11,7 @@
 
 <p>Status: <span id="status">Idle</span></p>
 <p id="duration" style="display: none">Duration: <span id="timer">0.00 second</span></p>
-<p id="progress" style="display: none;">Progress: <span id="progressValue">0.00%</span></p>
+<p id="progress" style="display: none;">Progress: <progress id="progress-bar" value="0" max="100"></progress> <span id="progressValue">0.00%</span></p>
 <p id="cracking" style="display: none;">Hash: <span id="hash"></span></p>
 <p id="password" style="display: none;">Password: <span id="plaintext"></span></p>
 
@@ -20,6 +20,7 @@
     const status = document.querySelector('#status');
     const duration = document.querySelector('#duration');
     const progress = document.querySelector('#progress');
+    const progressBar = document.querySelector('#progress-bar');
     const progressValue = document.querySelector('#progressValue');
     const timer = document.querySelector('#timer');
     const cracking = document.querySelector('#cracking');
@@ -33,6 +34,7 @@
         const md5 = form.elements.md5.value;
         if (workers >= 1 && md5 !== '') {
             status.textContent = 'Running';
+            progressBar.value = 0;
             progressValue.textContent = `${(0).toFixed(2)}%`; // change progress to 0%
             cracking.style.display = 'block';
             hash.textContent = form.elements.md5.value;
@@ -54,6 +56,7 @@
                 fetch(`/progress`)
                     .then(response => response.json())
                     .then(data => {
+                        progressBar.value = data.progress * 100;
                         progressValue.textContent = `${(data.progress * 100).toFixed(2)}%`;
                     });
             }, 500);
@@ -63,6 +66,7 @@
                 .then(response => response.json())
                 .then(data => {
                     status.textContent = 'Done';
+                    progressBar.value = 100;
                     progressValue.textContent = `${(100).toFixed(2)}%`; // change progress to 100%
                     password.style.display = 'block';
                     plaintext.textContent = data.password;
