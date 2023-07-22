@@ -7,9 +7,6 @@ from tqdm import tqdm
 from utils.constants import SIZE_OF_ALPHABET, JOB, ACK_JOB, PING, NOT_DONE, DONE_NOT_FOUND, DONE_FOUND, SHUTDOWN
 from utils.str_num import str_generator
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--port", required=True, help="port number of the server")
-args = vars(ap.parse_args())
 shutdown = False
 
 
@@ -38,7 +35,7 @@ class Job:
         self.password = password
 
 
-def brute_force(job):
+def brute_force(job, port):
     # TODO use multiprocessing
     global shutdown
     for s in tqdm(str_generator(job.start_s, job.end_s), total=SIZE_OF_ALPHABET ** 5):
@@ -46,7 +43,7 @@ def brute_force(job):
         # 'abcde': 'ab56b4d92b40713acc5af89985d4b786'
         # 'ABCDE': '2ecdde3959051d913f61b14579ea136d'
         if md5(s.encode()).hexdigest() == job.hash:
-            tqdm.write(f'Worker at {args["port"]} found: {s}')
+            tqdm.write(f'Worker at {port} found: {s}')
             job.update(True, s)
             return
         if shutdown:
@@ -54,12 +51,12 @@ def brute_force(job):
     job.update(True, None)
 
 
-def accept_new_job(job, conn, start_s, end_s, hash):
+def accept_new_job(job, conn, port, start_s, end_s, hash):
     if job.is_running:
         raise Exception('WARNING: Received job while already working on a job.')
     job.set(start_s, end_s, hash)
     conn.sendall(f'{ACK_JOB} {job.start_s} {job.end_s} {job.hash}'.encode())
-    daemon = threading.Thread(target=brute_force, args=(job,), daemon=True)
+    daemon = threading.Thread(target=brute_force, args=(job, port,), daemon=True)
     daemon.start()
 
 
@@ -76,13 +73,10 @@ def check_work_done(job, conn) -> bool:
     return True
 
 
-def main():
+def main(port):
     global shutdown
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as soc:  # AF_INET: IPv4, SOCK_STREAM: TCP
-        HOST = ''
-        PORT = int(args['port'])  # port of server
-
-        soc.bind((HOST, PORT))
+        soc.bind(('', port))
         soc.listen()
         conn, address = soc.accept()
         print('Connected')
@@ -99,7 +93,7 @@ def main():
                 request = data.decode().split(' ')
                 cmd = int(request[0])
                 if cmd == JOB:
-                    accept_new_job(job, conn, *request[1:])
+                    accept_new_job(job, conn, port, *request[1:])
                 elif cmd == PING:
                     if check_work_done(job, conn):
                         break  # get ready for next job
@@ -113,4 +107,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-p", "--port", required=True, help="port number of the server")
+    args = vars(ap.parse_args())
+
+    port = int(args['port'])
+    main(port)
