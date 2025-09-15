@@ -12,8 +12,6 @@
 python app.py
 ```
 
-Video demo: https://youtu.be/ZheDjTzCoqE
-
 ## Testing
 
 ### Run all tests
